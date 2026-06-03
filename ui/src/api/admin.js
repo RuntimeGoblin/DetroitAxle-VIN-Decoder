@@ -5,7 +5,7 @@ import client from "./client";
  * Returns PaginatedData: { items, total_count, total_pages, page, page_size }
  */
 export const listVehicles = (page = 1, q = "") =>
-  client.get("/admin/vehicles", { params: { page, page_size: 20, q } });
+  client.get("/vehicles", { params: { page, page_size: 20, q } });
 
 /* GET /api/admin/stats */
 export const getStats = () => client.get("/admin/stats");

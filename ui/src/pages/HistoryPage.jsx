@@ -178,31 +178,42 @@ function VerifyDialog({ entry, onClose, onVerified, userId }) {
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      {/* Backdrop — no blur, solid colour is much faster */}
+      <div className="absolute inset-0 bg-black/75" />
 
       {/* Panel */}
       <div className="relative z-10 w-full max-w-2xl max-h-[90vh] flex flex-col bg-bg-card border border-border rounded-2xl shadow-2xl animate-fade-in overflow-hidden">
         {/* Header */}
         <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-border-subtle bg-bg-elevated/50">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <Car className="w-4 h-4 text-accent shrink-0" />
-              <h2 className="text-base font-extrabold text-txt-primary truncate">
-                {vehicle.year} {vehicle.make} {vehicle.model}
-              </h2>
-            </div>
-            {(vehicle.trim || vehicle.series) && (
-              <p className="text-xs text-txt-secondary">
-                {[vehicle.trim, vehicle.series].filter(Boolean).join(" · ")}
-              </p>
+            {vehicle ? (
+              <>
+                <div className="flex items-center gap-2 mb-1">
+                  <Car className="w-4 h-4 text-accent shrink-0" />
+                  <h2 className="text-base font-extrabold text-txt-primary truncate">
+                    {vehicle.year} {vehicle.make} {vehicle.model}
+                  </h2>
+                </div>
+                {(vehicle.trim || vehicle.series) && (
+                  <p className="text-xs text-txt-secondary">
+                    {[vehicle.trim, vehicle.series].filter(Boolean).join(" · ")}
+                  </p>
+                )}
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <Fingerprint className="w-3 h-3 text-accent" />
+                  <span className="font-mono text-[10px] text-txt-muted tracking-widest">
+                    {vehicle.build_key}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Car className="w-4 h-4 text-accent shrink-0" />
+                <h2 className="text-base font-extrabold text-txt-primary">
+                  Vehicle #{entry.vehicle_id}
+                </h2>
+              </div>
             )}
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <Fingerprint className="w-3 h-3 text-accent" />
-              <span className="font-mono text-[10px] text-txt-muted tracking-widest">
-                {vehicle.build_key}
-              </span>
-            </div>
           </div>
           <button
             onClick={onClose}
@@ -301,12 +312,14 @@ function VerifyDialog({ entry, onClose, onVerified, userId }) {
         </div>
 
         {/* Vehicle specs — scrollable */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
-          <p className="text-[10px] font-bold text-txt-muted uppercase tracking-widest mb-4">
-            Vehicle Specifications
-          </p>
-          <VehicleSpecGrid vehicle={vehicle} />
-        </div>
+        {vehicle && (
+          <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-5">
+            <p className="text-[10px] font-bold text-txt-muted uppercase tracking-widest mb-4">
+              Vehicle Specifications
+            </p>
+            <VehicleSpecGrid vehicle={vehicle} />
+          </div>
+        )}
 
         {/* Footer / actions */}
         <div className="px-6 py-4 border-t border-border-subtle bg-bg-elevated/50 flex items-center justify-between gap-3">

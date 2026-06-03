@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  ArrowRight,
   Fingerprint,
   RefreshCw,
   AlertCircle,
@@ -23,6 +24,7 @@ import {
   Copy,
   ChevronsUpDown,
   ShieldCheck,
+  Search,
 } from "lucide-react";
 import { getVehicle, updateVehicle } from "../api/vehicles";
 import { useToast } from "../contexts/ToastContext";
@@ -165,10 +167,10 @@ function CopyBtn({ text, label = "Copied" }) {
 function SpecRow({ label, value, col, vin, history }) {
   const { user } = useAuth();
   const isTrusted = history.some(
-    (h) => h.fieldName === col && h.is_trusted === true,
+    (h) => h.field_name === col && h.is_trusted === true,
   );
   const isVerified = history.some(
-    (h) => h.fieldName === col && h.is_verified === true,
+    (h) => h.field_name === col && h.is_verified === true,
   );
 
   const [editing, setEditing] = useState(false);
@@ -538,12 +540,65 @@ function HeroBadge({ label, variant = "default" }) {
   return <span className={`badge border ${styles[variant]}`}>{label}</span>;
 }
 
+/* ── Quick VIN lookup — lives in the header ─────────────────────────── */
+function QuickVinSearch() {
+  const [raw, setRaw] = useState("");
+  const navigate = useNavigate();
+  const isReady = raw.length === 17;
+
+  const go = () => {
+    if (!isReady) return;
+    navigate(`/v/${raw}`);
+    setRaw("");
+  };
+
+  return (
+    <div className="hidden sm:flex items-center gap-1.5">
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-txt-muted/60 pointer-events-none" />
+        <input
+          value={raw}
+          onChange={(e) =>
+            setRaw(
+              e.target.value
+                .replace(/[^a-zA-Z0-9]/g, "")
+                .toUpperCase()
+                .slice(0, 17),
+            )
+          }
+          onKeyDown={(e) => e.key === "Enter" && go()}
+          placeholder="Quick VIN lookup…"
+          className={`w-36 lg:w-44 bg-bg-elevated border rounded-lg pl-7 pr-2 py-1.5 text-xs font-mono
+                      text-txt-primary placeholder:font-sans placeholder:text-txt-muted/50
+                      focus:outline-none transition-all
+                      ${isReady ? "border-accent" : "border-border-subtle focus:border-accent/50"}`}
+        />
+      </div>
+      <button
+        onClick={go}
+        disabled={!isReady}
+        title="Go to VIN"
+        className="p-1.5 rounded-lg bg-accent/10 text-accent disabled:opacity-30 disabled:cursor-not-allowed hover:bg-accent/20 transition-all"
+      >
+        <ArrowRight className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
 /* ════════════════════════════════════════════════════════════════════
    VehiclePage
 ══════════════════════════════════════════════════════════════════════ */
 export default function VehiclePage() {
   const { vin } = useParams();
   const navigate = useNavigate();
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/");
+    }
+  };
   /* null = use section defaults, true = all open, false = all closed */
   const [expandAll, setExpandAll] = useState(null);
 
@@ -589,10 +644,10 @@ export default function VehiclePage() {
       <div className="min-h-screen bg-bg-base flex flex-col">
         <header className="border-b border-border-subtle px-6 h-14 flex items-center">
           <button
-            onClick={() => navigate("/")}
+            onClick={handleBack}
             className="flex items-center gap-2 text-sm text-txt-muted hover:text-txt-primary transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Search
+            <ArrowLeft className="w-4 h-4" /> Back
           </button>
         </header>
         <div className="flex-1 flex items-center justify-center px-4 py-12">
@@ -624,10 +679,10 @@ export default function VehiclePage() {
               </div>
               <div className="flex gap-3">
                 <button
-                  onClick={() => navigate("/")}
+                  onClick={handleBack}
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-bg-elevated border border-border-subtle rounded-xl text-sm text-txt-primary hover:border-border transition-all"
                 >
-                  <ArrowLeft className="w-4 h-4" /> Try another VIN
+                  <ArrowLeft className="w-4 h-4" /> Go back
                 </button>
                 <button
                   onClick={() => refetch()}
@@ -651,15 +706,15 @@ export default function VehiclePage() {
       <header className="sticky top-0 z-40 bg-bg-base/90 backdrop-blur-md border-b border-border-subtle">
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
           <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-1.5 text-txt-muted hover:text-txt-primary text-sm transition-colors"
+            onClick={handleBack}
+            className="flex items-center gap-1.5 text-txt-muted hover:text-txt-primary text-sm transition-colors shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Search</span>
+            <span className="hidden sm:inline">Back</span>
           </button>
           <div className="h-4 w-px bg-border-subtle" />
           <Fingerprint className="w-3.5 h-3.5 text-accent shrink-0" />
-          <span className="font-mono text-xs text-txt-muted tracking-widest hidden sm:block">
+          <span className="font-mono text-xs text-txt-muted tracking-widest hidden md:block">
             {vehicle.example_build_number}
           </span>
           <CopyBtn text={vin} label="VIN" />
@@ -668,6 +723,7 @@ export default function VehiclePage() {
               {title}
             </p>
           </div>
+          <QuickVinSearch />
           <ThemeToggle />
         </div>
       </header>

@@ -7,7 +7,7 @@ import { Clock, ArrowRight, X, ShieldCheck, ShieldAlert } from "lucide-react";
  * Props:
  *   fieldName  – the DB column key (e.g. "cylinders")
  *   history    – vehicle.History array from the API:
- *                  { ID, FieldName, OldValue, NewValue, CreatedAt, Username, IsTrusted }
+ *                  { ID, FieldName, OldValue, NewValue, CreatedAt, Username, is_trusted }
  */
 export default function FieldHistoryIndicator({ fieldName, history = [] }) {
   const entries = history.filter((h) => h.field_name === fieldName);
@@ -128,14 +128,14 @@ export default function FieldHistoryIndicator({ fieldName, history = [] }) {
                     </span>
 
                     {/* Trusted badge */}
-                    {entry.IsTrusted !== undefined && (
+                    {entry.is_trusted !== undefined && (
                       <span
                         className="ml-auto shrink-0"
                         title={
-                          entry.IsTrusted ? "Trusted edit" : "Unverified edit"
+                          entry.is_trusted ? "Trusted edit" : "Unverified edit"
                         }
                       >
-                        {entry.IsTrusted ? (
+                        {entry.is_trusted ? (
                           <ShieldCheck className="w-3.5 h-3.5 text-success/60" />
                         ) : (
                           <ShieldAlert className="w-3.5 h-3.5 text-warn/60" />

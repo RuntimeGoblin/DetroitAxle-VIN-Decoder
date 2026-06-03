@@ -17,8 +17,8 @@ type AuthHandler struct {
 
 func (h *AuthHandler) Login(c *gin.Context) {
 	type LoginRequest struct {
-		Email    string `json:"email"    binding:"required,email"`
-		Password string `json:"password" binding:"required"`
+		Identifier string `json:"identifier" binding:"required"`
+		Password   string `json:"password"   binding:"required"`
 	}
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -26,7 +26,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 	var user models.User
-	if err := h.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
+	if err := h.DB.Where("email = ? OR username = ?", req.Identifier, req.Identifier).First(&user).Error; err != nil {
 		helpers.Fail(c, 401, "invalid credentials")
 		return
 	}

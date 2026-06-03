@@ -18,10 +18,9 @@ function Navbar({ user, logout }) {
         <nav className="flex items-center gap-0.5 ml-2">
           {[
             { to: "/", label: "Search" },
-
+            { to: "/listings", label: "Listings" },
             ...(user?.isAdmin
               ? [
-                  { to: "/listings", label: "Listings" },
                   { to: "/history", label: "History" },
                   { to: "/listing-error", label: "Listings Error" },
                   { to: "/admin", label: "Admin" },

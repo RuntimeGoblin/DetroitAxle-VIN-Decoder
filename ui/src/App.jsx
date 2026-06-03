@@ -46,9 +46,9 @@ export default function App() {
       <Route
         path="/listings"
         element={
-          <AdminRoute>
+          <ProtectedRoute>
             <ListingsPage />
-          </AdminRoute>
+          </ProtectedRoute>
         }
       />
       <Route

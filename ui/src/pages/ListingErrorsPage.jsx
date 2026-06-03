@@ -78,7 +78,7 @@ const SPEC_GROUPS = [
   {
     label: "Chassis",
     fields: [
-      ["gvwr", "GVWR"],
+      ["gvwr_lbs", "GVWR"],
       ["abs", "ABS"],
       ["front_brake_type", "Front Brake"],
       ["rear_brake_type", "Rear Brake"],
@@ -176,7 +176,7 @@ function NoteDetailModal({ note, onClose, onResolve, resolving }) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 transition-opacity" />
+      <div className="absolute inset-0 bg-black/75" />
       {/* Panel */}
       <div className="relative w-full max-w-3xl max-h-[95vh] flex flex-col bg-bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
         {/* ── Fixed Header ── */}

@@ -6,7 +6,7 @@ import {
   AlertCircle,
   Loader2,
   Fingerprint,
-  Mail,
+  AtSign,
   Lock,
   ArrowRight,
 } from "lucide-react";
@@ -30,7 +30,7 @@ const FEATURES = [
 ];
 
 export default function AuthPage() {
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ identifier: "", password: "" });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -48,7 +48,7 @@ export default function AuthPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await apiLogin(form.email, form.password);
+      const res = await apiLogin(form.identifier, form.password);
       /* res.data is already unwrapped by the Axios interceptor:
          { token: "...", refresh_token: "..." } */
       login(res.data.token, res.data.refresh_token, null);
@@ -150,20 +150,20 @@ export default function AuthPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Email */}
+              {/* Email or username */}
               <div>
                 <p className="text-xs font-semibold text-txt-muted uppercase tracking-wider mb-1.5">
-                  Email
+                  Email or Username
                 </p>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-txt-muted pointer-events-none" />
+                  <AtSign className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-txt-muted pointer-events-none" />
                   <input
-                    type="email"
-                    autoComplete="email"
+                    type="text"
+                    autoComplete="username"
                     required
-                    value={form.email}
-                    onChange={field("email")}
-                    placeholder="you@example.com"
+                    value={form.identifier}
+                    onChange={field("identifier")}
+                    placeholder="you@example.com or johndoe"
                     className="input-base pl-10"
                   />
                 </div>

@@ -24,6 +24,7 @@ func Setup(r *gin.Engine, db *gorm.DB) {
 		api.GET("/vin/:vin", vehicleHandler.GetVehicle)
 		api.PATCH("/update/:vin", vehicleHandler.UpdateVehicle)
 		api.GET("/id/:id", vehicleHandler.GetVehicleById)
+		api.GET("/vehicles", vehicleHandler.ListVehicles)
 	}
 
 	a := base.Group("/auth")
@@ -59,7 +60,7 @@ func Setup(r *gin.Engine, db *gorm.DB) {
 		admin.GET("/users", adminHandler.ListUsers)
 		admin.PATCH("/users/:id", adminHandler.UpdateUser)
 		admin.DELETE("/users/:id", adminHandler.DeleteUser)
-		admin.GET("/vehicles", vehicleHandler.ListVehicles)
+
 		admin.GET("/notes/chart", adminHandler.GetNotesChart)
 		admin.GET("/notes/recent", adminHandler.GetRecentNotes)
 		admin.POST("/users", adminHandler.CreateUser)

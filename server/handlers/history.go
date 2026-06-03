@@ -179,12 +179,23 @@ func (h *HistoryHandler) VerifyEntry(c *gin.Context) {
 	}
 
 	err = h.DB.Transaction(func(tx *gorm.DB) error {
+		// Mark this entry verified
 		if err := tx.Model(&models.VehicleFieldHistory{}).
 			Where("id = ?", id).
 			Updates(map[string]any{
 				"is_verified": true,
 				"verifier_id": requestBody.VerifierID,
 			}).Error; err != nil {
+			return err
+		}
+
+		// Auto-close any older unverified edits to the same field on the same
+		// vehicle — they're superseded by the one we just verified, so they
+		// should never resurface in the review queue.
+		if err := tx.Model(&models.VehicleFieldHistory{}).
+			Where("vehicle_id = ? AND field_name = ? AND id < ? AND is_verified = ?",
+				entry.VehicleID, entry.FieldName, id, false).
+			Update("is_verified", true).Error; err != nil {
 			return err
 		}
 
