@@ -1,0 +1,21 @@
+# Normalize line endings: LF in the repo, native on checkout
+* text=auto eol=lf
+
+# Go source files
+*.go text eol=lf
+
+# JS/JSX/CSS
+*.js   text eol=lf
+*.jsx  text eol=lf
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.css  text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+
+# Shell scripts — must be LF
+*.sh text eol=lf
+
+# Windows executables — binary
+*.exe binary
+*.db  binary

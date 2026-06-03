@@ -1,0 +1,34 @@
+# Environment files — never commit real secrets
+server/.env
+server/.env.local
+ui/.env
+ui/.env.local
+ui/.env.production
+
+# SQLite / database files
+*.db
+*.db-shm
+*.db-wal
+
+# Go build artifacts
+server/tmp/
+server/main
+server/main.exe
+
+# Node
+ui/node_modules/
+
+# Vite build output
+ui/dist/
+
+# Scratch files at repo root
+i.txt
+j.txt
+
+# Claude Code local config
+.claude/
+
+# Misc
+*.log
+.DS_Store
+Thumbs.db

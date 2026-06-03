@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════════
+   Design tokens — RGB channel triplets so Tailwind opacity modifiers
+   (bg-bg-card/80, border-subtle/40 …) work through CSS variables.
+══════════════════════════════════════════════════════════════════════ */
+
+/* ── Dark theme (default) — rich navy, not pitch-black ────────────── */
+:root,
+html.dark {
+    /* Backgrounds */
+    --c-bg-base: 15 22 36; /* #0f1624 */
+    --c-bg-surface: 21 33 51; /* #152133 */
+    --c-bg-card: 27 42 64; /* #1b2a40 */
+    --c-bg-elevated: 34 51 77; /* #22334d */
+
+    /* Borders */
+    --c-border-subtle: 30 48 76; /* #1e304c */
+    --c-border: 42 65 94; /* #2a415e */
+    --c-border-strong: 58 87 118; /* #3a5776 */
+
+    /* Text */
+    --c-txt-primary: 240 246 252; /* #f0f6fc */
+    --c-txt-secondary: 139 148 158; /* #8b949e */
+    --c-txt-muted: 80 101 128; /* #506580 */
+
+    /* Shadows */
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.5), 0 4px 20px rgba(0, 0, 0, 0.35);
+    --shadow-glow: 0 0 24px rgba(79, 142, 247, 0.22);
+    --shadow-glow-sm: 0 0 12px rgba(79, 142, 247, 0.16);
+    --shadow-modal: 0 8px 60px rgba(0, 0, 0, 0.7);
+}
+
+/* ── Light theme ───────────────────────────────────────────────────── */
+html.light {
+    /* Backgrounds */
+    --c-bg-base: 244 247 251; /* #f4f7fb */
+    --c-bg-surface: 234 240 248; /* #eaf0f8 */
+    --c-bg-card: 255 255 255; /* #ffffff */
+    --c-bg-elevated: 244 247 251; /* #f4f7fb */
+
+    /* Borders */
+    --c-border-subtle: 219 228 240; /* #dbe4f0 */
+    --c-border: 196 209 224; /* #c4d1e0 */
+    --c-border-strong: 148 163 184; /* #94a3b8 */
+
+    /* Text */
+    --c-txt-primary: 30 41 59; /* #1e293b */
+    --c-txt-secondary: 71 85 105; /* #475569 */
+    --c-txt-muted: 148 163 184; /* #94a3b8 */
+
+    /* Shadows */
+    --shadow-card:
+        0 1px 3px rgba(0, 0, 0, 0.07), 0 4px 16px rgba(0, 0, 0, 0.05);
+    --shadow-glow: 0 0 24px rgba(79, 142, 247, 0.15);
+    --shadow-glow-sm: 0 0 12px rgba(79, 142, 247, 0.1);
+    --shadow-modal: 0 8px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Base layer
+══════════════════════════════════════════════════════════════════════ */
+@layer base {
+    html {
+        font-family: "Inter", system-ui, sans-serif;
+        background-color: rgb(var(--c-bg-base));
+        color: rgb(var(--c-txt-primary));
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+        background: rgb(var(--c-bg-surface));
+    }
+    ::-webkit-scrollbar-thumb {
+        background: rgb(var(--c-border));
+        border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgb(var(--c-border-strong));
+    }
+
+    /* Text selection */
+    ::selection {
+        background: rgba(79, 142, 247, 0.28);
+        color: rgb(var(--c-txt-primary));
+    }
+
+    /* Autofill — remove browser yellow flash */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus {
+        -webkit-box-shadow: 0 0 0 1000px rgb(var(--c-bg-elevated)) inset;
+        -webkit-text-fill-color: rgb(var(--c-txt-primary));
+        caret-color: rgb(var(--c-txt-primary));
+        transition: background-color 5000s ease-in-out 0s;
+    }
+
+    /* Native <select> option background */
+    option {
+        background-color: rgb(var(--c-bg-card));
+        color: rgb(var(--c-txt-primary));
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Component layer
+══════════════════════════════════════════════════════════════════════ */
+@layer components {
+    .spec-row {
+        @apply flex items-center justify-between py-2.5 border-b border-border-subtle last:border-0 gap-3;
+    }
+    .spec-label {
+        @apply text-xs font-medium text-txt-muted shrink-0;
+    }
+    .spec-value {
+        @apply text-sm text-txt-primary font-medium text-right truncate;
+    }
+
+    .section-card {
+        @apply bg-bg-card border border-border-subtle rounded-2xl p-5 shadow-card;
+    }
+    .section-title {
+        @apply text-xs font-semibold uppercase tracking-widest text-txt-muted flex items-center gap-2;
+    }
+
+    .input-base {
+        @apply w-full bg-bg-elevated border border-border-subtle rounded-xl px-4 py-2.5 text-sm
+           text-txt-primary placeholder:text-txt-muted
+           focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20
+           transition-all duration-150;
+    }
+
+    .badge {
+        @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    }
+}

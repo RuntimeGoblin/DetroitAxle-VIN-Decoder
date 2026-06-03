@@ -1,0 +1,123 @@
+package models
+
+import (
+	"time"
+
+	"gorm.io/datatypes" // Required for JSON handling
+	"gorm.io/gorm"
+)
+
+type NoteType string
+
+const (
+	NoteTypeFreeText     NoteType = "free_text"
+	NoteTypePart         NoteType = "part_number"
+	NoteTypeListingError NoteType = "listing_error"
+)
+
+type PartCategory struct {
+	gorm.Model
+	Name  string      `gorm:"uniqueIndex;not null;size:100"`
+	Notes []AgentNote `gorm:"foreignKey:PartCategoryID"`
+}
+
+type FieldPermission struct {
+	gorm.Model
+	Role      string `gorm:"not null;size:20;uniqueIndex:idx_role_field"`
+	FieldName string `gorm:"not null;size:100;uniqueIndex:idx_role_field"`
+	CanEdit   bool   `gorm:"not null;default:false"`
+}
+
+type VehicleFieldHistory struct {
+	gorm.Model
+	VehicleID uint   `gorm:"not null;index"`
+	UserID    uint   `gorm:"not null;index"`
+	Username  string `gorm:"not null;size:50"`
+	FieldName string `gorm:"not null;size:100"`
+	OldValue  string `gorm:"size:500"`
+	NewValue  string `gorm:"size:500"`
+	IsTrusted bool   `gorm:"not null;default:false"`
+
+	IsVerified bool `gorm:"not null;default:false"`
+
+	VerifierID *uint `gorm:"index"`
+
+	Vehicle *Vehicle `gorm:"foreignKey:VehicleID"`
+}
+
+type AgentNote struct {
+	gorm.Model
+
+	// Vehicle this note belongs to
+	VehicleID uint `gorm:"not null;index"`
+
+	// Author
+	UserID   uint   `gorm:"not null;index"`
+	Username string `gorm:"not null;size:50"`
+
+	// Content
+	NoteType   NoteType `gorm:"not null;size:20"`
+	FreeText   *string  `gorm:"size:1000"`
+	PartNumber *string  `gorm:"size:100;index"`
+
+	// Only for part-number notes
+	PartCategoryID *uint
+	PartCategory   *PartCategory
+
+	User User `gorm:"foreignKey:UserID"`
+
+	IsResolved  bool    `gorm:"not null;default:false"`
+	ResolveNote *string `gorm:"size:1000"`
+}
+type Vehicle struct {
+	ID                 uint   `gorm:"primaryKey;autoIncrement"`
+	BuildKey           string `gorm:"column:build_key;unique;notNull"`
+	ExampleBuildNumber string `gorm:"column:example_build_number"`
+
+	// --- Basic Info ---
+	Year      int    `gorm:"column:year;notNull"`
+	Make      string `gorm:"column:make;notNull"`
+	Model     string `gorm:"column:model;notNull"`
+	Trim      string `gorm:"column:trim"`
+	Series    string `gorm:"column:series"`
+	BodyType  string `gorm:"column:body_type"`
+	DriveType string `gorm:"column:drive_type"`
+	Country   string `gorm:"column:country"`
+
+	Cylinders     string `gorm:"column:cylinders"`
+	DisplacementL string `gorm:"column:displacement_l"`
+	FuelType      string `gorm:"column:fuel_type"`
+
+	TransmissionType string `gorm:"column:transmission_type"`
+	Speeds           int    `gorm:"column:speeds"`
+
+	GVWR string `gorm:"column:gvwr_lbs"`
+
+	ABS string `gorm:"column:abs"`
+
+	FrontBrakeType string `gorm:"column:front_brake_type"`
+	RearBrakeType  string `gorm:"column:rear_brake_type"`
+
+	RearSpringType  string `gorm:"column:rear_spring_type"`
+	FrontSpringType string `gorm:"column:front_spring_type"`
+
+	SteeringType string `gorm:"column:steering_type"`
+	BrakeCode    string `gorm:"column:brake_code"`
+
+	FrontRotorSize string `gorm:"column:front_rotor_size"`
+	RearRotorSize  string `gorm:"column:rear_rotor_size"`
+
+	CustomFields datatypes.JSONMap `gorm:"column:custom_fields;type:jsonb"`
+
+	BrakeSystemType     string `gorm:"column:brake_system_type"`
+	Doors               string `gorm:"column:doors"`
+	EngineConfiguration string `gorm:"column:engine_configuration"`
+
+	// --- Notes ---
+	Notes []AgentNote `gorm:"foreignKey:VehicleID"`
+
+	History []VehicleFieldHistory `gorm:"foreignKey:VehicleID"`
+
+	CreatedAt time.Time `gorm:"column:created_at;notNull;default:CURRENT_TIMESTAMP"`
+	UpdatedAt time.Time `gorm:"column:updated_at;notNull;default:CURRENT_TIMESTAMP"`
+}
