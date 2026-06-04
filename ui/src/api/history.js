@@ -18,3 +18,5 @@ export const getVinHistory = ({
   });
 export const verifyVinUpdate = (id, data) =>
   client.patch(`/history/${id}/verify`, data);
+
+export const deleteHistoryEntry = (id) => client.delete(`/history/${id}`);

@@ -157,7 +157,7 @@ func (h *NotesHandler) DeleteNote(c *gin.Context) {
 	}
 
 	user := auth.CurrentUser(c)
-	if note.UserID != user.ID {
+	if note.UserID != user.ID && user.Role != "admin" {
 		helpers.Fail(c, http.StatusForbidden, "you can only delete your own notes")
 		return
 	}

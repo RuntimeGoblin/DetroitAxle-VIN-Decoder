@@ -11,8 +11,8 @@ export const listVehicles = (page = 1, q = "") =>
 export const getStats = () => client.get("/admin/stats");
 
 /* User management */
-export const listUsers = (page = 1) =>
-  client.get("/admin/users", { params: { page, page_size: 50 } });
+export const listUsers = (page = 1, pageSize = 50) =>
+  client.get("/admin/users", { params: { page, page_size: pageSize } });
 export const createUser = (data) => client.post("/admin/users", data);
 export const updateUser = (id, data) =>
   client.patch(`/admin/users/${id}`, data);

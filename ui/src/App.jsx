@@ -20,6 +20,14 @@ function AdminRoute({ children }) {
   return children;
 }
 
+/* Admin OR listing role — for pages the listing team also needs */
+function StaffRoute({ children }) {
+  const { token, user } = useAuth();
+  if (!token) return <Navigate to="/auth" replace />;
+  if (!user?.isAdmin && !user?.isListing) return <Navigate to="/" replace />;
+  return children;
+}
+
 export default function App() {
   return (
     <Routes>
@@ -54,17 +62,17 @@ export default function App() {
       <Route
         path="/history"
         element={
-          <AdminRoute>
+          <StaffRoute>
             <HistoryPage />
-          </AdminRoute>
+          </StaffRoute>
         }
       />
       <Route
         path="/listing-error"
         element={
-          <AdminRoute>
+          <StaffRoute>
             <ListingErrorsPage />
-          </AdminRoute>
+          </StaffRoute>
         }
       />
 

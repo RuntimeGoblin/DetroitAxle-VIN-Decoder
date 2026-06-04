@@ -253,7 +253,7 @@ function SpecRow({ label, value, col, vin, history }) {
           {display ?? "—"}
         </span>
 
-        <FieldHistoryIndicator fieldName={col} history={history} />
+        <FieldHistoryIndicator fieldName={col} history={history} vin={vin} />
         {/* Show edit button only when neither verified nor trusted */}
 
         {isVerified && (
@@ -277,7 +277,7 @@ function SpecRow({ label, value, col, vin, history }) {
             Trusted
           </span>
         )}
-        {!isVerified && (!isTrusted || user.isTrusted) && (
+        {!isVerified && (
           <button
             onClick={openEdit}
             className="opacity-0 group-hover:opacity-100 transition-opacity text-txt-muted hover:text-accent"

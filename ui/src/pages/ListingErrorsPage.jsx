@@ -17,10 +17,11 @@ import {
   Fingerprint,
   ArrowRight,
   MessageSquare,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import Navbar from "../components/NavBar";
-import { getListingErrorNotes, resolveNote } from "../api/notes";
+import { getListingErrorNotes, resolveNote, deleteNote } from "../api/notes";
 import { getVehicleById } from "../api/vehicles";
 import { useToast } from "../contexts/ToastContext";
 import StatCard from "../components/StatCard";
@@ -370,21 +371,23 @@ function NoteDetailModal({ note, onClose, onResolve, resolving }) {
 // Handlers are created once inside the component, not re-created in the parent.
 const ErrorRow = memo(function ErrorRow({
   note,
-  onClick, // setSelected — stable setState dispatcher, safe as a prop
-  onHover, // useCallback-wrapped prefetch — stable
+  onClick,
+  onHover,
+  onDelete,
 }) {
-  // These handlers are stable per-row: note identity only changes when data changes
-  const handleClick = useCallback(() => onClick(note), [note, onClick]);
+  const [confirming, setConfirming] = useState(false);
+
+  const handleClick = useCallback(() => !confirming && onClick(note), [note, onClick, confirming]);
   const handleHover = useCallback(
     () => onHover(note.vehicle_id),
     [note.vehicle_id, onHover],
   );
 
   return (
-    <button
+    <div
       onClick={handleClick}
       onMouseEnter={handleHover}
-      className="w-full text-left section-card p-4 hover:border-accent/30 hover:shadow-glow transition-all duration-200 group animate-fade-in flex flex-col sm:flex-row sm:items-center gap-4"
+      className="relative w-full text-left section-card p-4 hover:border-accent/30 hover:shadow-glow transition-all duration-200 group animate-fade-in flex flex-col sm:flex-row sm:items-center gap-4 cursor-pointer"
     >
       {/* Icon & Primary Info */}
       <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
@@ -429,9 +432,41 @@ const ErrorRow = memo(function ErrorRow({
             {timeAgo(note.created_at)}
           </span>
         </div>
-        <ArrowRight className="w-4 h-4 text-txt-muted group-hover:text-accent transition-colors" />
+        {!confirming ? (
+          <ArrowRight className="w-4 h-4 text-txt-muted group-hover:text-accent transition-colors" />
+        ) : null}
       </div>
-    </button>
+
+      {/* ── Delete control ── */}
+      {!confirming ? (
+        <button
+          onClick={(e) => { e.stopPropagation(); setConfirming(true); }}
+          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-txt-muted hover:text-danger hover:bg-danger/10 transition-all"
+          title="Delete this error"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      ) : (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="absolute top-2.5 right-2.5 flex items-center gap-1.5 bg-bg-card border border-danger/30 rounded-xl px-2.5 py-1.5 shadow-lg z-10"
+        >
+          <span className="text-xs text-txt-secondary">Delete this error?</span>
+          <button
+            onClick={() => { onDelete(note.note_id); setConfirming(false); }}
+            className="px-2 py-0.5 text-xs font-semibold bg-danger text-white rounded-lg hover:opacity-90 transition-opacity"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => setConfirming(false)}
+            className="p-0.5 text-txt-muted hover:text-txt-primary transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+    </div>
   );
 });
 
@@ -504,6 +539,22 @@ export default function ListingErrorsPage() {
     [doResolveNote, handleClose],
   );
 
+  /* ── Delete mutation ───────────────────────────────────────────── */
+  const handleDelete = useCallback(
+    (noteId) => {
+      deleteNote(noteId)
+        .then(() => {
+          queryClient.setQueryData(["listing-errors"], (old) => {
+            if (!old?.items) return old;
+            return { ...old, items: old.items.filter((n) => n.note_id !== noteId) };
+          });
+          toast("Error deleted.", "info");
+        })
+        .catch(() => toast("Failed to delete.", "error"));
+    },
+    [queryClient, toast],
+  );
+
   /* ── Render ────────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-bg-base flex flex-col font-sans">
@@ -571,6 +622,7 @@ export default function ListingErrorsPage() {
                 note={note}
                 onClick={setSelected}
                 onHover={handleRowHover}
+                onDelete={handleDelete}
               />
             ))}
           </div>

@@ -11,8 +11,8 @@ function parseJWT(token) {
       username: claims.username,
       role: claims.role ?? "agent",
       isTrusted: claims.is_trusted ?? false,
-      /* Convenience bool so components can do user.isAdmin */
       isAdmin: claims.role === "admin",
+      isListing: claims.role === "listing",
     };
   } catch {
     return null;

@@ -33,24 +33,14 @@ function NoteRow({ note }) {
   const handleVehicleClick = async (e) => {
     e.preventDefault();
     if (isRedirecting) return;
-
     try {
       setIsRedirecting(true);
-      const response = await getVehicleById(note.vehicle_id);
-
-      // Using BuildKey from your example response as the VIN
-      const vin = response.data.data?.BuildKey;
-
-      if (vin) {
-        navigate(`/v/${vin}`);
-      } else {
-        console.error(
-          "VIN (BuildKey) not found in vehicle data",
-          response.data,
-        );
-      }
-    } catch (error) {
-      console.error("Failed to fetch vehicle details for redirect:", error);
+      const res = await getVehicleById(note.vehicle_id);
+      // After the axios interceptor, res.data is the VehicleResponse (snake_case)
+      const buildKey = res.data?.build_key;
+      if (buildKey) navigate(`/v/${buildKey}`);
+    } catch {
+      // silently ignore — redirect is best-effort
     } finally {
       setIsRedirecting(false);
     }

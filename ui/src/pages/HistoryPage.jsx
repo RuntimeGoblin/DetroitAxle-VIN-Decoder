@@ -19,10 +19,11 @@ import {
   Pencil,
   ShieldOff,
   ShieldAlert,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import Navbar from "../components/NavBar";
-import { getVinHistory, verifyVinUpdate } from "../api/history";
+import { getVinHistory, verifyVinUpdate, deleteHistoryEntry } from "../api/history";
 import { useToast } from "../contexts/ToastContext";
 import StatCard from "../components/StatCard";
 
@@ -138,7 +139,7 @@ function VehicleSpecGrid({ vehicle }) {
 }
 
 /* ─── Verify dialog ─────────────────────────────────────────────────── */
-function VerifyDialog({ entry, onClose, onVerified, userId }) {
+function VerifyDialog({ entry, onClose, onVerified, onDelete, userId }) {
   const [verifying, setVerifying] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [correctedValue, setCorrectedValue] = useState(entry.new_value ?? "");
@@ -323,11 +324,16 @@ function VerifyDialog({ entry, onClose, onVerified, userId }) {
 
         {/* Footer / actions */}
         <div className="px-6 py-4 border-t border-border-subtle bg-bg-elevated/50 flex items-center justify-between gap-3">
-          <p className="text-xs text-txt-muted">
-            {hasCorrection
-              ? "Vehicle will be patched with your corrected value, then marked verified."
-              : "Confirm this change is accurate before verifying."}
-          </p>
+          {/* Delete — left side, destructive */}
+          <button
+            onClick={() => { onDelete(entry.id); onClose(); }}
+            className="flex items-center gap-1.5 text-sm text-danger/60 hover:text-danger transition-colors shrink-0"
+            title="Delete this change permanently"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Delete change
+          </button>
+
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
@@ -508,6 +514,34 @@ export default function HistoryPage() {
   const allCount = notTrustedCount + trustedCount;
   const toast = useToast();
 
+  // ── Optimistic delete ─────────────────────────────────────────────
+  const handleDeleted = useCallback(
+    (id) => {
+      deleteHistoryEntry(id)
+        .then(() => {
+          queryClient.setQueriesData({ queryKey: ["vin-history"] }, (old) => {
+            if (!old?.items) return old;
+            const removed = old.items.find((e) => e.id === id);
+            if (!removed) return old;
+            return {
+              ...old,
+              items: old.items.filter((e) => e.id !== id),
+              total_count: Math.max(0, (old.total_count ?? 0) - 1),
+              not_trusted_count: !removed.is_trusted
+                ? Math.max(0, (old.not_trusted_count ?? 0) - 1)
+                : old.not_trusted_count,
+              trusted_count: removed.is_trusted
+                ? Math.max(0, (old.trusted_count ?? 0) - 1)
+                : old.trusted_count,
+            };
+          });
+          toast("Change deleted.");
+        })
+        .catch(() => toast("Failed to delete.", "error"));
+    },
+    [queryClient, toast],
+  );
+
   // ── Optimistic verify ─────────────────────────────────────────────
   // Once verified, backend will stop returning the entry,
   // so we remove it from the cache entirely.
@@ -662,7 +696,11 @@ export default function HistoryPage() {
         {!isLoading && !isError && entries.length > 0 && (
           <div className="space-y-3">
             {entries.map((entry) => (
-              <HistoryRow key={entry.ID} entry={entry} onClick={setSelected} />
+              <HistoryRow
+                key={entry.id}
+                entry={entry}
+                onClick={setSelected}
+              />
             ))}
           </div>
         )}
@@ -703,6 +741,7 @@ export default function HistoryPage() {
           entry={selected}
           onClose={() => setSelected(null)}
           onVerified={handleVerified}
+          onDelete={handleDeleted}
           userId={user?.id ?? user?.ID}
         />
       )}

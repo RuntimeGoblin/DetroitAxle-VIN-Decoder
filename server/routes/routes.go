@@ -72,6 +72,7 @@ func Setup(r *gin.Engine, db *gorm.DB) {
 	{
 		history.GET("/", historyHandler.ListHistory)
 		history.PATCH("/:id/verify", historyHandler.VerifyEntry)
+		history.DELETE("/:id", historyHandler.DeleteEntry)
 	}
 
 	// Serve frontend

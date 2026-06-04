@@ -12,6 +12,7 @@ import (
 	"gorm.io/gorm"
 
 	dto "main/DTO"
+	"main/auth"
 	"main/helpers"
 	"main/models"
 )
@@ -112,6 +113,49 @@ func (h *HistoryHandler) ListHistory(c *gin.Context) {
 		"not_trusted_count": notTrustedCount,
 		"trusted_count":     trustedCount,
 	})
+}
+
+// DELETE /history/:id
+func (h *HistoryHandler) DeleteEntry(c *gin.Context) {
+	user := auth.CurrentUser(c)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		helpers.Fail(c, http.StatusBadRequest, "invalid id")
+		return
+	}
+
+	var entry models.VehicleFieldHistory
+	if err := h.DB.First(&entry, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			helpers.Fail(c, http.StatusNotFound, "entry not found")
+		} else {
+			helpers.Fail(c, http.StatusInternalServerError, "failed to fetch entry")
+		}
+		return
+	}
+
+	// Only admin or the person who made the change can delete it
+	if user.Role != "admin" && entry.UserID != user.ID {
+		helpers.Fail(c, http.StatusForbidden, "not authorized to delete this entry")
+		return
+	}
+
+	err = h.DB.Transaction(func(tx *gorm.DB) error {
+		// Revert the vehicle field to its previous value
+		if err := tx.Model(&models.Vehicle{}).
+			Where("id = ?", entry.VehicleID).
+			Updates(map[string]any{entry.FieldName: entry.OldValue}).Error; err != nil {
+			return err
+		}
+		// Remove the history entry
+		return tx.Delete(&entry).Error
+	})
+	if err != nil {
+		helpers.Fail(c, http.StatusInternalServerError, "failed to delete entry")
+		return
+	}
+
+	helpers.OK(c, gin.H{"message": "entry deleted", "reverted_field": entry.FieldName, "reverted_to": entry.OldValue})
 }
 
 // PATCH /history/:id/verify

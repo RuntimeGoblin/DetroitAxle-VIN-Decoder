@@ -71,16 +71,25 @@ func (h *AdminHandler) AdminStatus(c *gin.Context) {
 		return
 	}
 
+	var listingErrorCount int64
+	if err := h.DB.Model(&models.AgentNote{}).Where("note_type = ?", models.NoteTypeListingError).Count(&listingErrorCount).Error; err != nil {
+		helpers.Fail(c, 500, err.Error())
+		return
+	}
+
 	helpers.OK(c, gin.H{
-		"vehicles_count":    vehiclesCount,
-		"user_count":        userCount,
-		"notes_count":       notesCount,
-		"notes_today_count": notesTodayCount,
-		"categories_count":  categoriesCount,
-		"total_free_notes":  totals.TotalFreeNotes,
-		"total_part_notes":  totals.TotalPartNotes,
-		"total_vin_usage":   totals.TotalVinUsage,
-		"total_updates":     totals.TotalUpdates,
+		"vehicles_count":       vehiclesCount,
+		"user_count":           userCount,
+		"notes_count":          notesCount,
+		"notes_today_count":    notesTodayCount,
+		"categories_count":     categoriesCount,
+		"free_notes_count":     freeTextCount,
+		"part_notes_count":     partNumberCount,
+		"listing_errors_count": listingErrorCount,
+		"total_free_notes":     totals.TotalFreeNotes,
+		"total_part_notes":     totals.TotalPartNotes,
+		"total_vin_usage":      totals.TotalVinUsage,
+		"total_updates":        totals.TotalUpdates,
 	})
 }
 func (h *AdminHandler) ListUsers(c *gin.Context) {
@@ -203,18 +212,18 @@ func (h *AdminHandler) GetNotesChart(c *gin.Context) {
 	since := time.Now().UTC().Truncate(24*time.Hour).AddDate(0, 0, -days+1)
 
 	type row struct {
-		Date  string `gorm:"column:date"`
-		Count int64  `gorm:"column:count"`
+		Date  string `gorm:"column:note_date"`
+		Count int64  `gorm:"column:note_count"`
 	}
 
 	var rows []row
-	err = h.DB.
-		Model(&models.AgentNote{}).
-		Select("DATE(created_at) AS date, COUNT(*) AS count").
-		Where("created_at >= ?", since).
-		Group("DATE(created_at)").
-		Order("date ASC").
-		Scan(&rows).Error
+	err = h.DB.Raw(`
+		SELECT DATE(created_at)::text AS note_date, COUNT(*) AS note_count
+		FROM agent_notes
+		WHERE created_at >= ? AND deleted_at IS NULL
+		GROUP BY DATE(created_at)
+		ORDER BY note_date ASC
+	`, since).Scan(&rows).Error
 
 	if err != nil {
 		helpers.Fail(c, http.StatusInternalServerError, "failed to query notes chart")
