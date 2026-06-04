@@ -3,6 +3,7 @@ package routes
 import (
 	"main/auth"
 	"main/handlers"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -74,9 +75,18 @@ func Setup(r *gin.Engine, db *gorm.DB) {
 	}
 
 	// Serve frontend
-	r.Static("/assets", "/home/developer/frontend/assets")
-	r.StaticFile("/", "/home/developer/frontend/index.html")
+	const frontendDir = "/home/developer/frontend"
+	r.Static("/assets", frontendDir+"/assets")
+	r.StaticFile("/", frontendDir+"/index.html")
 	r.NoRoute(func(c *gin.Context) {
-		c.File("/home/developer/frontend/index.html")
+		// If the requested path is a real file in the frontend directory
+		// (favicon.svg, robots.txt, manifest.json, etc.), serve it directly.
+		// Otherwise fall back to index.html so the SPA handles routing.
+		candidate := frontendDir + c.Request.URL.Path
+		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+			c.File(candidate)
+			return
+		}
+		c.File(frontendDir + "/index.html")
 	})
 }

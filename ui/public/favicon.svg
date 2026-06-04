@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background: exact dark theme base colour -->
+  <rect width="32" height="32" rx="7" fill="#0f1624"/>
+
+  <!--
+    Fingerprint — the brand icon used throughout the app.
+    Three concentric arcs opening downward + a centre dot.
+    Each arc is slightly taller than a pure semicircle so there's
+    a clear visual gap between them at 16×16 browser size.
+  -->
+
+  <!-- Outer arc -->
+  <path
+    d="M4 18 A12.5 13 0 0 1 28 18"
+    fill="none" stroke="#4f8ef7" stroke-width="2" stroke-linecap="round"
+  />
+
+  <!-- Middle arc -->
+  <path
+    d="M8.5 18 A7.5 8 0 0 1 23.5 18"
+    fill="none" stroke="#4f8ef7" stroke-width="2" stroke-linecap="round"
+  />
+
+  <!-- Inner arc -->
+  <path
+    d="M12.5 18 A3.5 4 0 0 1 19.5 18"
+    fill="none" stroke="#4f8ef7" stroke-width="2" stroke-linecap="round"
+  />
+
+  <!-- Centre dot -->
+  <circle cx="16" cy="18" r="2.2" fill="#4f8ef7"/>
+</svg>
