@@ -26,7 +26,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 	var user models.User
-	if err := h.DB.Where("email = ? OR username = ?", req.Identifier, req.Identifier).First(&user).Error; err != nil {
+	if err := h.DB.Where("LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)", req.Identifier, req.Identifier).First(&user).Error; err != nil {
 		helpers.Fail(c, 401, "invalid credentials")
 		return
 	}

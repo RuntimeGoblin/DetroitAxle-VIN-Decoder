@@ -15,6 +15,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { updateNote, deleteNote } from "../api/notes";
+import { copyText } from "../utils/clipboard";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 
@@ -153,16 +154,16 @@ export default function NoteCard({ note, vin, categories }) {
 
   const copyPart = async () => {
     try {
-      await navigator.clipboard.writeText(note.part_number ?? "");
+      await copyText(note.part_number ?? "");
       toast("Part number copied", "info");
     } catch {
       toast("Could not copy", "error");
     }
   };
 
-  const copyText = async () => {
+  const copyNoteText = async () => {
     try {
-      await navigator.clipboard.writeText(note.free_text ?? "");
+      await copyText(note.free_text ?? "");
       toast("Note text copied", "info");
     } catch {
       toast("Could not copy", "error");
@@ -335,7 +336,7 @@ export default function NoteCard({ note, vin, categories }) {
               {note.free_text}
             </p>
             <button
-              onClick={copyText}
+              onClick={copyNoteText}
               title="Copy description"
               className="absolute top-0 right-0 opacity-0 group-hover/copy:opacity-100 transition-opacity text-txt-muted hover:text-danger"
             >
@@ -384,7 +385,7 @@ export default function NoteCard({ note, vin, categories }) {
             {note.free_text}
           </p>
           <button
-            onClick={copyText}
+            onClick={copyNoteText}
             title="Copy text"
             className="absolute top-0 right-0 opacity-0 group-hover/copy:opacity-100 transition-opacity text-txt-muted hover:text-accent"
           >

@@ -27,6 +27,7 @@ import {
   Search,
 } from "lucide-react";
 import { getVehicle, updateVehicle } from "../api/vehicles";
+import { copyText } from "../utils/clipboard";
 import { useToast } from "../contexts/ToastContext";
 import ThemeToggle from "../components/ThemeToggle";
 import NotesPanel from "../components/NotesPanel";
@@ -139,7 +140,7 @@ function CopyBtn({ text, label = "Copied" }) {
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setCopied(true);
       toast(`${label} copied`, "info");
       setTimeout(() => setCopied(false), 2000);

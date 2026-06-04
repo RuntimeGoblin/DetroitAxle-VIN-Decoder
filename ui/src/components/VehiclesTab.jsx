@@ -1,4 +1,5 @@
 import React, { useState, Fragment } from "react";
+import { copyText } from "../utils/clipboard";
 import { useQuery } from "@tanstack/react-query";
 import {
   X,
@@ -45,8 +46,12 @@ function driveColor(dt) {
 
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false);
-  const handle = () => {
-    navigator.clipboard.writeText(text).catch(() => {});
+  const handle = async () => {
+    try {
+      await copyText(text);
+    } catch {
+      // silent — visual feedback still shows
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
