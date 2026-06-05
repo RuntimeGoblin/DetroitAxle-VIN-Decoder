@@ -17,6 +17,7 @@ type HistoryResponse struct {
 
 	IsVerified bool      `json:"is_verified"`
 	VerifierID *uint     `json:"verifier_id"`
+	Source     string    `json:"source"`
 	CreatedAt  time.Time `json:"created_at"`
 }
 
@@ -37,6 +38,7 @@ func HistoryFromModel(history *models.VehicleFieldHistory) HistoryResponse {
 		IsTrusted:  history.IsTrusted,
 		IsVerified: history.IsVerified,
 		VerifierID: history.VerifierID,
+		Source:     history.Source,
 		CreatedAt:  history.CreatedAt,
 	}
 }

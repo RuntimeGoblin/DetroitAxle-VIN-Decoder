@@ -140,7 +140,11 @@ func (h *VehicleHandler) UpdateVehicle(c *gin.Context) {
 		return
 	}
 
-	// Remove read-only / relational fields
+	// Extract optional source annotation (DNR use) before processing
+	source, _ := payload["_source"].(string)
+
+	// Remove read-only / meta fields
+	delete(payload, "_source")
 	delete(payload, "id")
 	delete(payload, "build_key")
 	delete(payload, "notes")
@@ -206,6 +210,7 @@ func (h *VehicleHandler) UpdateVehicle(c *gin.Context) {
 			OldValue:  oldStr,
 			NewValue:  newStr,
 			IsTrusted: isTrusted,
+			Source:    source,
 		})
 	}
 

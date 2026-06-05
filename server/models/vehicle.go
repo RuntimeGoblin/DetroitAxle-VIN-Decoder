@@ -40,7 +40,8 @@ type VehicleFieldHistory struct {
 
 	IsVerified bool `gorm:"not null;default:false"`
 
-	VerifierID *uint `gorm:"index"`
+	VerifierID *uint  `gorm:"index"`
+	Source     string `gorm:"column:source;size:500"` // where this data came from (DNR use)
 
 	Vehicle *Vehicle `gorm:"foreignKey:VehicleID"`
 }

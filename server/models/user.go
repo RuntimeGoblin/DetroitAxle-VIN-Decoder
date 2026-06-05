@@ -13,7 +13,7 @@ type User struct {
 	HashedPassword string     `gorm:"not null"                   json:"-"`
 	IsActive       bool       `gorm:"default:true;not null"`
 	LastLoginAt    *time.Time `gorm:"column:last_login_at"`
-	Role           string     `gorm:"not null;size:20;default:agent"` // agent, admin, listing
+	Role           string     `gorm:"not null;size:20;default:agent"` // agent, admin, listing, dnr
 	IsTrusted      bool       `gorm:"not null;default:false"`
 	FreeNotesCount int        `gorm:"column:free_notes_count;not null;default:0"`
 	PartNotesCount int        `gorm:"column:part_notes_count;not null;default:0"`

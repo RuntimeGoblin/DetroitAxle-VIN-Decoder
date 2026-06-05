@@ -13,6 +13,7 @@ function parseJWT(token) {
       isTrusted: claims.is_trusted ?? false,
       isAdmin: claims.role === "admin",
       isListing: claims.role === "listing",
+      isDNR: claims.role === "dnr",
     };
   } catch {
     return null;

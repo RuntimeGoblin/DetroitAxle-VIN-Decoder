@@ -25,12 +25,17 @@ function Navbar({ user, logout }) {
             {[
               { to: "/", label: "Search" },
               { to: "/listings", label: "Listings" },
+              { to: "/parts", label: "Parts" },
               /* History + Listing Error: admin and listing role */
               ...((user?.isAdmin || user?.isListing)
                 ? [
                     { to: "/history", label: "History" },
                     { to: "/listing-error", label: "Listing Errors" },
                   ]
+                : []),
+              /* DNR data center: dnr and admin */
+              ...((user?.isAdmin || user?.isDNR)
+                ? [{ to: "/dnr", label: "DNR" }]
                 : []),
               /* Admin dashboard: admin only */
               ...(user?.isAdmin ? [{ to: "/admin", label: "Admin" }] : []),

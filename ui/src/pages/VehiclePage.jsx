@@ -32,6 +32,7 @@ import { useToast } from "../contexts/ToastContext";
 import ThemeToggle from "../components/ThemeToggle";
 import NotesPanel from "../components/NotesPanel";
 import FieldHistoryIndicator from "../components/Fieldhistoryindicator.jsx";
+import CompatibleParts from "../components/CompatibleParts.jsx";
 import { useAuth } from "../contexts/AuthContext";
 
 const SPEC_SECTIONS = [
@@ -813,9 +814,10 @@ export default function VehiclePage() {
             </div>
           </div>
 
-          {/* Notes column */}
-          <div className="xl:sticky xl:top-[3.75rem] xl:self-start xl:max-h-[calc(100vh-5rem)] xl:overflow-y-auto pb-4">
+          {/* Notes + Compatible Parts column */}
+          <div className="xl:sticky xl:top-[3.75rem] xl:self-start xl:max-h-[calc(100vh-5rem)] xl:overflow-y-auto pb-4 space-y-4">
             <NotesPanel vehicle={vehicle} vin={vin} />
+            <CompatibleParts vin={vin} />
           </div>
         </div>
       </div>

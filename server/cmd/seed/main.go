@@ -39,9 +39,9 @@ func main() {
 	// Check if already exists
 	var existing models.User
 	if db.Where("username = ?", username).First(&existing).Error == nil {
-		// Already there — just ensure IsAdmin is set
-		db.Model(&existing).Update("is_admin", true)
-		fmt.Printf("\n✓ User '%s' already exists — IsAdmin flag set to true.\n\n", username)
+		// Already there — ensure the role is admin
+		db.Model(&existing).Update("role", "admin")
+		fmt.Printf("\n✓ User '%s' already exists — role set to admin.\n\n", username)
 		printCreds(email, username, password)
 		return
 	}

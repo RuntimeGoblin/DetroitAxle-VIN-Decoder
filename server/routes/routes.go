@@ -16,6 +16,8 @@ func Setup(r *gin.Engine, db *gorm.DB) {
 	categoriesHandler := &handlers.CategoryHandler{DB: db}
 	adminHandler := &handlers.AdminHandler{DB: db}
 	historyHandler := &handlers.HistoryHandler{DB: db}
+	dnrHandler   := &handlers.DNRHandler{DB: db}
+	partsHandler := &handlers.PartsHandler{DB: db}
 
 	base := r.Group("/api")
 
@@ -73,6 +75,32 @@ func Setup(r *gin.Engine, db *gorm.DB) {
 		history.GET("/", historyHandler.ListHistory)
 		history.PATCH("/:id/verify", historyHandler.VerifyEntry)
 		history.DELETE("/:id", historyHandler.DeleteEntry)
+	}
+
+	dnr := base.Group("/dnr", auth.RequireAuth(db), auth.RequireDNR)
+	{
+		dnr.GET("/queue", dnrHandler.GetQueue)
+		dnr.GET("/stats", dnrHandler.GetStats)
+		dnr.GET("/similar", dnrHandler.GetSimilar)
+		dnr.POST("/propagate", dnrHandler.Propagate)
+		dnr.POST("/vehicles", dnrHandler.CreateVehicle)
+	}
+
+	// Parts catalog — read: any authenticated user; write: handled inside handler
+	parts := base.Group("/parts", auth.RequireAuth(db))
+	{
+		parts.GET("/",                    partsHandler.ListParts)
+		parts.GET("/categories",          partsHandler.ListCategories)
+		parts.GET("/by-vehicle/:vin",     partsHandler.GetCompatibleParts)
+		parts.GET("/:id",                 partsHandler.GetPart)
+		parts.POST("/",                   partsHandler.CreatePart)
+		parts.PATCH("/:id",               partsHandler.UpdatePart)
+		parts.DELETE("/:id",              partsHandler.DeletePart)
+		parts.POST("/:id/rules",          partsHandler.AddRule)
+		parts.PATCH("/:id/rules/:rule_id",partsHandler.UpdateRule)
+		parts.DELETE("/:id/rules/:rule_id",partsHandler.DeleteRule)
+		parts.GET("/:id/vehicles",         partsHandler.GetCompatibleVehicles)
+		parts.POST("/:id/clone",           partsHandler.ClonePart)
 	}
 
 	// Serve frontend

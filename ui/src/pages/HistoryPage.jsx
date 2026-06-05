@@ -14,10 +14,8 @@ import {
   Car,
   User,
   ArrowRight,
-  Filter,
   Zap,
   Pencil,
-  ShieldOff,
   ShieldAlert,
   Trash2,
 } from "lucide-react";

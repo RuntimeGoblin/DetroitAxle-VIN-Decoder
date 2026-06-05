@@ -7,6 +7,8 @@ import ListingsPage from "./pages/ListingsPage";
 import AdminPage from "./pages/AdminPage";
 import HistoryPage from "./pages/HistoryPage";
 import ListingErrorsPage from "./pages/ListingErrorsPage";
+import DNRPage from "./pages/DNRPage";
+import PartsPage from "./pages/PartsPage";
 
 function ProtectedRoute({ children }) {
   const { token } = useAuth();
@@ -25,6 +27,14 @@ function StaffRoute({ children }) {
   const { token, user } = useAuth();
   if (!token) return <Navigate to="/auth" replace />;
   if (!user?.isAdmin && !user?.isListing) return <Navigate to="/" replace />;
+  return children;
+}
+
+/* Admin OR dnr role */
+function DNRRoute({ children }) {
+  const { token, user } = useAuth();
+  if (!token) return <Navigate to="/auth" replace />;
+  if (!user?.isAdmin && !user?.isDNR) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -82,6 +92,24 @@ export default function App() {
           <AdminRoute>
             <AdminPage />
           </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/dnr"
+        element={
+          <DNRRoute>
+            <DNRPage />
+          </DNRRoute>
+        }
+      />
+
+      <Route
+        path="/parts"
+        element={
+          <ProtectedRoute>
+            <PartsPage />
+          </ProtectedRoute>
         }
       />
 

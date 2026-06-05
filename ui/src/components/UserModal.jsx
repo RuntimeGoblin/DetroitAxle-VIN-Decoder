@@ -12,7 +12,7 @@ import {
 import { createUser, updateUser } from "../api/admin";
 import { useToast } from "../contexts/ToastContext";
 
-const ROLES = ["agent", "admin", "listing"];
+const ROLES = ["agent", "admin", "listing", "dnr"];
 
 export default function UserModal({ user: editing, onClose }) {
   const isEdit = !!editing;

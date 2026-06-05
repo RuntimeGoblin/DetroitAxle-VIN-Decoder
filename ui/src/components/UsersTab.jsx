@@ -16,7 +16,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import UserModal from "./UserModal";
 
-const ROLE_OPTIONS = ["all", "admin", "agent"];
+const ROLE_OPTIONS = ["all", "admin", "agent", "listing", "dnr"];
 const STATUS_OPTIONS = ["all", "active", "inactive"];
 const TRUSTED_OPTIONS = ["all", "trusted", "untrusted"];
 
@@ -51,7 +51,8 @@ export default function UsersTab() {
   });
 
   const trustMut = useMutation({
-    mutationFn: ({ id, isTrusted }) => updateUser(id, { is_trusted: isTrusted }),
+    mutationFn: ({ id, isTrusted }) =>
+      updateUser(id, { is_trusted: isTrusted }),
     onSuccess: (_, { isTrusted }) => {
       qc.invalidateQueries({ queryKey: ["admin-users"] });
       toast(isTrusted ? "User marked as trusted" : "Trust revoked", "info");
@@ -281,10 +282,15 @@ export default function UsersTab() {
                       {/* Trust toggle */}
                       <button
                         onClick={() =>
-                          trustMut.mutate({ id: u.id, isTrusted: !u.is_trusted })
+                          trustMut.mutate({
+                            id: u.id,
+                            isTrusted: !u.is_trusted,
+                          })
                         }
                         disabled={trustMut.isPending}
-                        title={u.is_trusted ? "Revoke trust" : "Mark as trusted"}
+                        title={
+                          u.is_trusted ? "Revoke trust" : "Mark as trusted"
+                        }
                         className={`p-1.5 rounded-lg transition-all ${
                           u.is_trusted
                             ? "text-emerald-400 hover:text-txt-muted hover:bg-bg-elevated"

@@ -141,10 +141,16 @@ func (h *HistoryHandler) DeleteEntry(c *gin.Context) {
 	}
 
 	err = h.DB.Transaction(func(tx *gorm.DB) error {
-		// Revert the vehicle field to its previous value
-		if err := tx.Model(&models.Vehicle{}).
-			Where("id = ?", entry.VehicleID).
-			Updates(map[string]any{entry.FieldName: entry.OldValue}).Error; err != nil {
+		// Revert the vehicle field to its previous value.
+		// Use raw Exec instead of Updates(map) so GORM never skips the value
+		// when OldValue is an empty string or other zero value — which is the
+		// exact case when an agent filled a previously-blank field and then
+		// wants to undo that change.
+		sql := fmt.Sprintf(
+			`UPDATE vehicles SET %s = $1, updated_at = NOW() WHERE id = $2`,
+			entry.FieldName,
+		)
+		if err := tx.Exec(sql, entry.OldValue, entry.VehicleID).Error; err != nil {
 			return err
 		}
 		// Remove the history entry
@@ -244,11 +250,12 @@ func (h *HistoryHandler) VerifyEntry(c *gin.Context) {
 		}
 
 		if requestBody.CorrectedValue != nil {
-			if err := tx.Model(&models.Vehicle{}).
-				Where("id = ?", entry.VehicleID).
-				Updates(map[string]any{
-					entry.FieldName: *requestBody.CorrectedValue,
-				}).Error; err != nil {
+			// Use raw Exec so an empty corrected value is applied correctly
+			sql := fmt.Sprintf(
+				`UPDATE vehicles SET %s = $1, updated_at = NOW() WHERE id = $2`,
+				entry.FieldName,
+			)
+			if err := tx.Exec(sql, *requestBody.CorrectedValue, entry.VehicleID).Error; err != nil {
 				return err
 			}
 		}

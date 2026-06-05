@@ -63,3 +63,18 @@ func RequireAdmin(c *gin.Context) {
 	}
 	c.Next()
 }
+
+// RequireDNR allows admin and dnr roles only.
+func RequireDNR(c *gin.Context) {
+	user, exists := c.Get(CurrentUserKey)
+	if !exists {
+		c.AbortWithStatusJSON(401, gin.H{"error": "unauthorized"})
+		return
+	}
+	role := user.(*models.User).Role
+	if role != "admin" && role != "dnr" {
+		c.AbortWithStatusJSON(403, gin.H{"error": "DNR team access required"})
+		return
+	}
+	c.Next()
+}

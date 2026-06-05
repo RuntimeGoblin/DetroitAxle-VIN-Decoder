@@ -351,14 +351,19 @@ func parseEngineString(s string) (cylinders string, displacement string, fuelTyp
 func normalizeDriveType(s string) string {
 	s = strings.ToUpper(strings.TrimSpace(s))
 	switch {
-	case strings.Contains(s, "FWD") || strings.Contains(s, "FRONT"):
-		return "FWD"
-	case strings.Contains(s, "RWD") || strings.Contains(s, "REAR"):
-		return "RWD"
-	case strings.Contains(s, "AWD") || strings.Contains(s, "ALL-WHEEL") || strings.Contains(s, "ALL WHEEL DRIVE"):
-		return "AWD"
-	case strings.Contains(s, "4WD") || strings.Contains(s, "4X4") || strings.Contains(s, "FOUR-WHEEL"):
+	// 4WD / four-wheel — check this BEFORE AWD to avoid "FOUR-WHEEL" being missed
+	case strings.Contains(s, "4WD") || strings.Contains(s, "4X4") ||
+		(strings.Contains(s, "FOUR") && strings.Contains(s, "WHEEL")):
 		return "4WD"
+	case strings.Contains(s, "AWD") ||
+		(strings.Contains(s, "ALL") && strings.Contains(s, "WHEEL")):
+		return "AWD"
+	case strings.Contains(s, "FWD") ||
+		(strings.Contains(s, "FRONT") && strings.Contains(s, "WHEEL")):
+		return "FWD"
+	case strings.Contains(s, "RWD") ||
+		(strings.Contains(s, "REAR") && strings.Contains(s, "WHEEL")):
+		return "RWD"
 	default:
 		return s
 	}
