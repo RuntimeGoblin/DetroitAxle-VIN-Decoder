@@ -104,14 +104,14 @@ export default function App() {
         }
       />
 
-      <Route
+      {/* <Route
         path="/parts"
         element={
           <ProtectedRoute>
             <PartsPage />
           </ProtectedRoute>
         }
-      />
+      />*/}
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

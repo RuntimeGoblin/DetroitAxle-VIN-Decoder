@@ -817,7 +817,7 @@ export default function VehiclePage() {
           {/* Notes + Compatible Parts column */}
           <div className="xl:sticky xl:top-[3.75rem] xl:self-start xl:max-h-[calc(100vh-5rem)] xl:overflow-y-auto pb-4 space-y-4">
             <NotesPanel vehicle={vehicle} vin={vin} />
-            <CompatibleParts vin={vin} />
+            {/* <CompatibleParts vin={vin} />*/}
           </div>
         </div>
       </div>
