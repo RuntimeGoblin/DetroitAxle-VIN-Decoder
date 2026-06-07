@@ -16,8 +16,10 @@ func Setup(r *gin.Engine, db *gorm.DB) {
 	categoriesHandler := &handlers.CategoryHandler{DB: db}
 	adminHandler := &handlers.AdminHandler{DB: db}
 	historyHandler := &handlers.HistoryHandler{DB: db}
-	dnrHandler   := &handlers.DNRHandler{DB: db}
-	partsHandler := &handlers.PartsHandler{DB: db}
+	dnrHandler    := &handlers.DNRHandler{DB: db}
+	partsHandler  := &handlers.PartsHandler{DB: db}
+	importHandler := &handlers.ImportHandler{DB: db}
+	gmHandler     := &handlers.GMHandler{DB: db}
 
 	base := r.Group("/api")
 
@@ -28,6 +30,10 @@ func Setup(r *gin.Engine, db *gorm.DB) {
 		api.PATCH("/update/:vin", vehicleHandler.UpdateVehicle)
 		api.GET("/id/:id", vehicleHandler.GetVehicleById)
 		api.GET("/vehicles", vehicleHandler.ListVehicles)
+
+		// GM Parts Giant — live RPO/build-option lookup for a specific VIN.
+		// Not persisted; data is VIN-specific and must not be stored under a build key.
+		api.GET("/gm/decode/:vin", gmHandler.DecodeGMLive)
 	}
 
 	a := base.Group("/auth")
@@ -84,6 +90,14 @@ func Setup(r *gin.Engine, db *gorm.DB) {
 		dnr.GET("/similar", dnrHandler.GetSimilar)
 		dnr.POST("/propagate", dnrHandler.Propagate)
 		dnr.POST("/vehicles", dnrHandler.CreateVehicle)
+	}
+
+	// Bulk VIN import — admin and DNR team
+	importGroup := base.Group("/import", auth.RequireAuth(db), auth.RequireDNR)
+	{
+		importGroup.POST("/", importHandler.StartImport)
+		importGroup.GET("/:job_id", importHandler.GetImportJob)
+		importGroup.DELETE("/:job_id", importHandler.CancelImport)
 	}
 
 	// Parts catalog — read: any authenticated user; write: handled inside handler

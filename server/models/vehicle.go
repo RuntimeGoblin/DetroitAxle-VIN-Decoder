@@ -114,6 +114,10 @@ type Vehicle struct {
 	Doors               string `gorm:"column:doors"`
 	EngineConfiguration string `gorm:"column:engine_configuration"`
 
+	// --- GM Parts Giant enrichment ---
+	GMData       datatypes.JSONMap `gorm:"column:gm_data;type:jsonb"`
+	GMDataFetched bool             `gorm:"column:gm_data_fetched;default:false;not null"`
+
 	// --- Notes ---
 	Notes []AgentNote `gorm:"foreignKey:VehicleID"`
 

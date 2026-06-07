@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -26,7 +26,7 @@ import {
   ShieldCheck,
   Search,
 } from "lucide-react";
-import { getVehicle, updateVehicle } from "../api/vehicles";
+import { getVehicle, updateVehicle, fetchGMLive } from "../api/vehicles";
 import { copyText } from "../utils/clipboard";
 import { useToast } from "../contexts/ToastContext";
 import ThemeToggle from "../components/ThemeToggle";
@@ -502,6 +502,269 @@ function CustomFieldsSection({ customFields, vin }) {
   );
 }
 
+/* ── GM Live Build Options section ──────────────────────────────────── */
+
+// WMI prefixes that belong to GM-manufactured vehicles.
+const GM_WMI2 = ["1G", "2G", "3G"];
+const GM_WMI3 = ["KL4", "KL8", "KL1", "W0L"];
+const GM_MAKES = new Set([
+  "chevrolet", "gmc", "buick", "cadillac",
+  "pontiac", "saturn", "oldsmobile", "hummer", "opel", "vauxhall",
+]);
+
+function isGMVehicle(vehicle) {
+  if (GM_MAKES.has((vehicle.make || "").toLowerCase())) return true;
+  const vin = (vehicle.example_build_number || "").toUpperCase();
+  if (vin.length >= 3) {
+    if (GM_WMI2.some((p) => vin.startsWith(p))) return true;
+    if (GM_WMI3.some((p) => vin.startsWith(p))) return true;
+  }
+  return false;
+}
+
+// Title-case alphabetic runs; keep numbers, slashes, punctuation intact.
+// Also strips a trailing dash/space left over from codes like "PACKAGE OPTION-".
+function formatGMText(raw) {
+  return String(raw)
+    .replace(/[A-Za-z]+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .replace(/[\s-]+$/, "")
+    .trim();
+}
+
+// Friendly labels for the GM summary rows (major attributes + vehicle info).
+const GM_FRIENDLY = {
+  Productiondate: "Production Date",
+  CatalogCode: "Catalog Code",
+  MakeCode: "Make Code",
+  ModelCode: "Model Code",
+  Vehicle: "Vehicle",
+  Engine: "Engine",
+  "Model String": "Model String",
+  Transmission: "Transmission",
+};
+
+// Split a GM spec description into individual RPO entries.
+//   "AE8-ADJUSTER FRT ST POWER, 8 WAY"  -> [{ code:"AE8", text:"Adjuster Frt St Power, 8 Way" }]
+//   "1SZ-PACKAGE OPTION-;PCW-CONTROL…"  -> two entries (semicolon-separated)
+function parseRPO(desc) {
+  return String(desc)
+    .split(";")
+    .map((seg) => seg.trim())
+    .filter(Boolean)
+    .map((seg) => {
+      const m = seg.match(/^([A-Z0-9]{2,4})-(.*)$/);
+      if (m) return { code: m[1], text: formatGMText(m[2]) };
+      return { code: null, text: formatGMText(seg) };
+    });
+}
+
+/* Renders GM Parts Giant's native structure: a short summary plus the full,
+   per-VIN RPO / build-option list. */
+function GMNativeData({ data }) {
+  const major = data.major_attributes ?? [];
+  const info = data.vehicle_information ?? [];
+  const specs = data.specifications ?? [];
+
+  // Flatten every spec entry into individual RPO rows (keep category for context).
+  const rpoRows = [];
+  for (const s of specs) {
+    for (const e of parseRPO(s.desc)) {
+      rpoRows.push({ category: s.name, code: e.code, text: e.text });
+    }
+  }
+
+  const SummaryRow = ({ label, value }) => (
+    <div className="spec-row items-start">
+      <span className="spec-label pt-px shrink-0">{label}</span>
+      <span className="text-xs text-txt-primary font-medium text-right leading-snug">
+        {value}
+      </span>
+    </div>
+  );
+
+  return (
+    <div className="mt-3 space-y-4">
+      {/* Summary */}
+      {(major.length > 0 || info.length > 0) && (
+        <div>
+          <p className="text-[10px] font-semibold text-txt-muted uppercase tracking-wider mb-1.5 pb-1 border-b border-border-subtle/40">
+            Summary
+          </p>
+          {major.map((x) => (
+            <SummaryRow
+              key={`m-${x.name}`}
+              label={GM_FRIENDLY[x.name] ?? x.name}
+              value={formatGMText(x.desc)}
+            />
+          ))}
+          {info.map((x) => (
+            <SummaryRow
+              key={`i-${x.name}`}
+              label={GM_FRIENDLY[x.name] ?? x.name}
+              value={x.desc}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Full RPO / build-option list */}
+      {rpoRows.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-1.5 pb-1 border-b border-border-subtle/40">
+            <p className="text-[10px] font-semibold text-txt-muted uppercase tracking-wider">
+              Build Options &amp; RPO Codes
+            </p>
+            <span className="text-[10px] font-mono text-txt-muted/40 tabular-nums">
+              {rpoRows.length}
+            </span>
+          </div>
+          <div className="space-y-0.5">
+            {rpoRows.map((r, i) => (
+              <div key={i} className="flex items-start gap-2 py-1">
+                {r.code ? (
+                  <span className="shrink-0 font-mono text-[10px] font-semibold text-accent bg-accent/10 border border-accent/20 rounded px-1.5 py-0.5 leading-none mt-px tabular-nums">
+                    {r.code}
+                  </span>
+                ) : (
+                  <span className="shrink-0 w-[38px]" />
+                )}
+                <span className="text-xs text-txt-secondary leading-snug">
+                  {r.text || "—"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {data.redirect_url && (
+        <a
+          href={data.redirect_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-[11px] text-accent hover:underline mt-1"
+        >
+          View on GM Parts Giant ↗
+        </a>
+      )}
+    </div>
+  );
+}
+
+function GMLiveSection({ vehicle }) {
+  const [open, setOpen] = useState(false);
+  const [vinInput, setVinInput] = useState(vehicle.example_build_number ?? "");
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState(null);
+  const hasFetched = useRef(false);
+
+  if (!isGMVehicle(vehicle)) return null;
+
+  const doFetch = async (vin) => {
+    const target = (vin ?? vinInput).trim().toUpperCase();
+    if (target.length !== 17) return;
+    setLoading(true);
+    setErr(null);
+    setData(null);
+    try {
+      const res = await fetchGMLive(target);
+      setData(res.data);
+      hasFetched.current = true;
+    } catch (e) {
+      setErr(e?.response?.data?.error ?? e?.message ?? "Failed to fetch GM data");
+      hasFetched.current = true;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    // Auto-fetch on first expand using the vehicle's example VIN.
+    if (next && !hasFetched.current && vinInput.length === 17) {
+      doFetch(vinInput);
+    }
+  };
+
+  return (
+    <div className="section-card animate-fade-in">
+      {/* Header */}
+      <button onClick={toggle} className="w-full flex items-center justify-between">
+        <span className="section-title">
+          <Car className="w-4 h-4 text-blue-400" />
+          GM Build Options
+          <span className="ml-1.5 text-[10px] font-mono text-txt-muted/40 tabular-nums">
+            live
+          </span>
+        </span>
+        {open
+          ? <ChevronUp className="w-4 h-4 text-txt-muted" />
+          : <ChevronDown className="w-4 h-4 text-txt-muted" />}
+      </button>
+
+      {open && (
+        <div className="mt-3">
+          {/* VIN input */}
+          <div className="flex gap-2 mb-3">
+            <input
+              value={vinInput}
+              onChange={(e) =>
+                setVinInput(
+                  e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 17),
+                )
+              }
+              onKeyDown={(e) => e.key === "Enter" && doFetch()}
+              placeholder="Enter full VIN…"
+              className="flex-1 bg-bg-elevated border border-border-subtle rounded-lg px-3 py-1.5 text-xs font-mono text-txt-primary placeholder:font-sans placeholder:text-txt-muted focus:outline-none focus:border-accent/60 transition-all"
+            />
+            <button
+              onClick={() => doFetch()}
+              disabled={loading || vinInput.length !== 17}
+              className="px-3 py-1.5 bg-accent/10 hover:bg-accent/20 border border-accent/30 text-accent rounded-lg text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all"
+            >
+              {loading
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <Search className="w-3.5 h-3.5" />}
+              Look Up
+            </button>
+          </div>
+
+          <p className="text-[10px] text-txt-muted/60 mb-3 leading-relaxed">
+            RPO codes are specific to each individual VIN off the assembly line —
+            this data is fetched live and is not saved. Two vehicles of the same
+            model may carry different options.
+          </p>
+
+          {/* States */}
+          {loading && (
+            <div className="flex items-center justify-center py-8 gap-2 text-txt-muted text-xs">
+              <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+              Fetching from GM Parts Giant…
+            </div>
+          )}
+
+          {err && !loading && (
+            <div className="flex items-start gap-2 bg-danger/5 border border-danger/20 rounded-xl px-3 py-2.5 text-xs text-danger">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-px" />
+              {err}
+            </div>
+          )}
+
+          {data && !loading && <GMNativeData data={data} />}
+
+          {!data && !loading && !err && (
+            <p className="text-xs text-txt-muted/50 text-center py-6">
+              Enter a full 17-character VIN and click Look Up to see build options.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Record metadata strip ──────────────────────────────────────────── */
 function RecordMeta({ createdAt, updatedAt }) {
   const fmt = (iso) => {
@@ -811,6 +1074,7 @@ export default function VehiclePage() {
                 customFields={vehicle.custom_fields}
                 vin={vin}
               />
+              <GMLiveSection vehicle={vehicle} />
             </div>
           </div>
 

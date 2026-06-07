@@ -34,6 +34,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Migration failed:", err)
 	}
+
 	r := gin.Default()
 	routes.Setup(r, db)
 	r.Run(":8080")

@@ -39,7 +39,9 @@ type VehicleResponse struct {
 	FrontRotorSize string `json:"front_rotor_size"`
 	RearRotorSize  string `json:"rear_rotor_size"`
 
-	CustomFields map[string]any `json:"custom_fields"`
+	CustomFields  map[string]any `json:"custom_fields"`
+	GMData        map[string]any `json:"gm_data"`
+	GMDataFetched bool           `json:"gm_data_fetched"`
 
 	BrakeSystemType     string `json:"brake_system_type"`
 	Doors               string `json:"doors"`
@@ -78,6 +80,8 @@ func VehicleFromModel(v models.Vehicle) VehicleResponse {
 		FrontRotorSize:      v.FrontRotorSize,
 		RearRotorSize:       v.RearRotorSize,
 		CustomFields:        v.CustomFields,
+		GMData:              v.GMData,
+		GMDataFetched:       v.GMDataFetched,
 		BrakeSystemType:     v.BrakeSystemType,
 		Doors:               v.Doors,
 		EngineConfiguration: v.EngineConfiguration,
