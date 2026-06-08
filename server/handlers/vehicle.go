@@ -85,7 +85,20 @@ func (h *VehicleHandler) GetVehicle(c *gin.Context) {
 		First(&vehicle)
 
 	if result.Error == nil {
-		// Vehicle found in DB — increment and return immediately
+		// Vehicle found. For GM cars not yet enriched, backfill GM build-key-stable
+		// fields once (uses the searched VIN, or the stored example VIN for a
+		// 10-char build-key lookup). Non-fatal — display still works if GM is down.
+		if !vehicle.GMChecked {
+			fullVIN := vin
+			if len(fullVIN) != 17 {
+				fullVIN = vehicle.ExampleBuildNumber
+			}
+			if len(fullVIN) == 17 && services.IsGMBrandVIN(fullVIN) {
+				if err := services.EnrichExistingWithGM(h.DB, fullVIN, &vehicle); err != nil {
+					log.Printf("GM backfill failed for %s (non-fatal): %v", fullVIN, err)
+				}
+			}
+		}
 		incrementVinUsage(h.DB, user.ID)
 		helpers.OK(c, dto.VehicleFromModel(vehicle))
 		return

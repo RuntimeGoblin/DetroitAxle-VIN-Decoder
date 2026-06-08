@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -96,15 +97,21 @@ type nhtsaFetchResult struct {
 	err  error
 }
 
+type gmFetchResult struct {
+	attrs *GMVINAttributes
+	err   error
+}
+
 // ─── Entry point ─────────────────────────────────────────────────────────────
 
-// DecodeVINAndSave fetches auto.dev + NHTSA concurrently, merges both sources
-// onto vehicle, then upserts into the database.
+// DecodeVINAndSave fetches auto.dev + NHTSA (and, for GM-brand VINs, GM Parts
+// Giant) concurrently, merges them onto vehicle, then upserts into the database.
 //
-// GM Parts Giant (RPO / build-option codes) is intentionally NOT called here.
-// RPO codes are stamped per individual vehicle off the assembly line — saving
-// them under a shared build key would corrupt all other vehicles in that group.
-// Use GET /api/gm/decode/:vin for on-demand live lookup of a specific VIN.
+// GM contributes ONLY VDS-encoded, build-key-stable fields (Series + engine
+// details) via ApplyStableFields. GM's per-VIN data — the RPO `specification`
+// list (brake code, options, …) AND transmission, which is not VDS-encoded —
+// is never persisted here, since it can differ between units sharing a build
+// key. That data is served live by GET /api/gm/decode/:vin.
 func DecodeVINAndSave(db *gorm.DB, vin string, vehicle *models.Vehicle) error {
 	vin = strings.TrimSpace(strings.ToUpper(vin))
 
@@ -120,6 +127,7 @@ func DecodeVINAndSave(db *gorm.DB, vin string, vehicle *models.Vehicle) error {
 
 	autoCh  := make(chan autoDevResult, 1)
 	nhtsaCh := make(chan nhtsaFetchResult, 1)
+	gmCh    := make(chan gmFetchResult, 1)
 
 	go func() {
 		defer wg.Done()
@@ -133,12 +141,26 @@ func DecodeVINAndSave(db *gorm.DB, vin string, vehicle *models.Vehicle) error {
 		nhtsaCh <- nhtsaFetchResult{resp, err}
 	}()
 
+	// GM enrichment only for GM-brand VINs (others have no GM data anyway).
+	if IsGMBrandVIN(vin) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			attrs, err := FetchGMAttributes(vin)
+			gmCh <- gmFetchResult{attrs, err}
+		}()
+	} else {
+		gmCh <- gmFetchResult{} // buffered — won't block
+	}
+
 	wg.Wait()
 	close(autoCh)
 	close(nhtsaCh)
+	close(gmCh)
 
 	autoRes  := <-autoCh
 	nhtsaRes := <-nhtsaCh
+	gmRes    := <-gmCh
 
 	if autoRes.err != nil {
 		return fmt.Errorf("auto.dev request failed: %w", autoRes.err)
@@ -152,6 +174,21 @@ func DecodeVINAndSave(db *gorm.DB, vin string, vehicle *models.Vehicle) error {
 
 	if err := mapToVehicle(vin, autoRes.resp, nhtsaRes.resp, vehicle); err != nil {
 		return fmt.Errorf("mapping failed: %w", err)
+	}
+
+	// GM: persist only build-key-stable fields. Non-fatal on failure — a GM
+	// outage (or a VIN GM doesn't recognize) must never block the decode.
+	if IsGMBrandVIN(vin) {
+		switch {
+		case gmRes.err == nil && gmRes.attrs != nil:
+			gmRes.attrs.ApplyStableFields(vehicle)
+			vehicle.GMChecked = true
+		case errors.Is(gmRes.err, ErrGMNoData):
+			vehicle.GMChecked = true // GM definitively has nothing — don't retry
+		default:
+			// Transient error — leave GMChecked false so a later access retries.
+			log.Printf("[VIN decode] GM enrichment failed (non-fatal): %v", gmRes.err)
+		}
 	}
 
 	// Upsert.
@@ -319,7 +356,7 @@ func mapToVehicle(vin string, r *autoDevResponse, nhtsa *nhtsaResult, v *models.
 			v.Trim = strings.TrimSpace(nhtsa.Trim)
 		}
 
-		// Series — fill for non-GM cars (GM's MapToVehicle will overwrite for GM cars)
+		// Series — fill if auto.dev didn't provide one
 		if v.Series == "" && nhtsa.Series != "" {
 			v.Series = strings.TrimSpace(nhtsa.Series)
 		}
