@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -273,6 +274,13 @@ func (h *ImportHandler) processVIN(ctx context.Context, rawVIN string, skipExist
 	var existing models.Vehicle
 	if h.DB.Where("build_key = ?", buildKey).First(&existing).Error == nil {
 		if skipExisting {
+			// Even when skipping the re-decode, backfill GM build-key-stable
+			// fields for GM cars that haven't been enriched yet.
+			if !existing.GMChecked && services.IsGMBrandVIN(vin) {
+				if err := services.EnrichExistingWithGM(h.DB, vin, &existing); err != nil {
+					log.Printf("import GM backfill failed for %s (non-fatal): %v", vin, err)
+				}
+			}
 			result.Status = "skipped"
 			result.Make = existing.Make
 			result.Model = existing.Model

@@ -114,9 +114,14 @@ type Vehicle struct {
 	Doors               string `gorm:"column:doors"`
 	EngineConfiguration string `gorm:"column:engine_configuration"`
 
-	// --- GM Parts Giant enrichment ---
-	GMData       datatypes.JSONMap `gorm:"column:gm_data;type:jsonb"`
-	GMDataFetched bool             `gorm:"column:gm_data_fetched;default:false;not null"`
+	// GMChecked is true once we've attempted GM Parts Giant enrichment for this
+	// build key (whether GM had data or not). Lets us backfill GM build-key-stable
+	// fields exactly once for GM cars, and filter GM cars still pending lookup.
+	//
+	// NOTE: GM's per-VIN RPO data (brake/option codes) is NEVER stored — it is
+	// VIN-specific and fetched live via GET /api/gm/decode/:vin. Only VDS-encoded,
+	// build-key-stable GM fields (trim, series, engine) are persisted.
+	GMChecked bool `gorm:"column:gm_checked;default:false;not null"`
 
 	// --- Notes ---
 	Notes []AgentNote `gorm:"foreignKey:VehicleID"`

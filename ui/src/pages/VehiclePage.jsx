@@ -565,11 +565,11 @@ function GMNativeData({ data }) {
   const info = data.vehicle_information ?? [];
   const specs = data.specifications ?? [];
 
-  // Flatten every spec entry into individual RPO rows (keep category for context).
+  // Flatten every spec entry into individual RPO rows.
   const rpoRows = [];
   for (const s of specs) {
     for (const e of parseRPO(s.desc)) {
-      rpoRows.push({ category: s.name, code: e.code, text: e.text });
+      rpoRows.push(e);
     }
   }
 
@@ -652,14 +652,13 @@ function GMNativeData({ data }) {
 }
 
 function GMLiveSection({ vehicle }) {
-  const [open, setOpen] = useState(false);
+  const isGM = isGMVehicle(vehicle);
+  const [open, setOpen] = useState(true);
   const [vinInput, setVinInput] = useState(vehicle.example_build_number ?? "");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
   const hasFetched = useRef(false);
-
-  if (!isGMVehicle(vehicle)) return null;
 
   const doFetch = async (vin) => {
     const target = (vin ?? vinInput).trim().toUpperCase();
@@ -679,14 +678,18 @@ function GMLiveSection({ vehicle }) {
     }
   };
 
-  const toggle = () => {
-    const next = !open;
-    setOpen(next);
-    // Auto-fetch on first expand using the vehicle's example VIN.
-    if (next && !hasFetched.current && vinInput.length === 17) {
-      doFetch(vinInput);
+  // Auto-fetch on page load for GM cars — the user shouldn't have to press
+  // anything; GM's per-VIN data should be on screen as soon as the page opens.
+  useEffect(() => {
+    if (isGM && !hasFetched.current && (vehicle.example_build_number ?? "").length === 17) {
+      doFetch(vehicle.example_build_number);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGM, vehicle.example_build_number]);
+
+  if (!isGM) return null;
+
+  const toggle = () => setOpen((v) => !v);
 
   return (
     <div className="section-card animate-fade-in">
